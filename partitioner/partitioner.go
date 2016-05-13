@@ -13,10 +13,10 @@ const (
 )
 
 var (
-	blockSize = flag.Int("blocksize",
+	blockSize = flag.Int64("blocksize",
 		DEFAULT_BLOCKSIZE,
 		"desired size of each partition in bytes")
-	numOfPartitions = flag.Int("num_of_partitions",
+	numOfPartitions = flag.Int64("num_of_partitions",
 		DEFAULT_PARTITION_COUNT,
 		"desired number of partitions")
 )
@@ -32,28 +32,33 @@ func NewPartition(data []byte) *Partition {
 }
 
 type Partitioner struct {
-	blocksize      int
-	min_partitions int
+	blocksize      int64
+	min_partitions int64
 
-	partitions []Partition
+	partitions []*Partition
 }
 
-func NewPartitioner(blocksize, min_partitions int) *Partitioner {
+func NewPartitioner(blocksize, min_partitions int64) *Partitioner {
 	return &Partitioner{
 		blocksize:      blocksize,
 		min_partitions: min_partitions,
 	}
 }
 
-func (p *Partitioner) Partition(file string) error {
-	file, err := os.Open(file)
+func (p *Partitioner) Partition(file_path string) error {
+	file, err := os.Open(file_path)
 	if err != nil {
 		return err
 	}
 
-	file_size := file.Stat().Size()
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
 
-	remainder := size % p.blocksize
+	file_size := stat.Size()
+
+	remainder := file_size % p.blocksize
 	partition_count := file_size / p.blocksize
 	if remainder > 0 {
 		partition_count += 1
@@ -67,7 +72,7 @@ func (p *Partitioner) Partition(file string) error {
 
 	log.Printf("Creating %s partitions", partition_count)
 
-	partition_size = file_size / partition_count
+	partition_size := file_size / partition_count
 
 	buffer := make([]byte, partition_size)
 
@@ -83,4 +88,5 @@ func (p *Partitioner) Partition(file string) error {
 
 		p.partitions = append(p.partitions, NewPartition(buffer))
 	}
+	return nil
 }
