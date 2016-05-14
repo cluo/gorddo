@@ -86,7 +86,17 @@ func (p *Partitioner) Partition(file_path string) error {
 			break
 		}
 
-		p.partitions = append(p.partitions, NewPartition(buffer))
+		partition, remaining_bytes, err := NewPartition(buffer)
+		if err != nil {
+			return err
+		}
+
+		p.partitions = append(p.partitions, partition)
+
+		_, err = file.Seek(-len(remaining_bytes), 1)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
