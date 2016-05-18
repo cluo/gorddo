@@ -1,4 +1,4 @@
-package partitioner
+package gorddo
 
 import (
 	"flag"
